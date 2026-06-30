@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BMI 계산기</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "맑은 고딕", sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      padding: 40px 36px;
+      width: 360px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 24px;
+      color: #2c3e50;
+      margin-bottom: 28px;
+    }
+
+    .input-group {
+      margin-bottom: 16px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 6px;
+    }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .input-row input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input-row input:focus { border-color: #2c3e50; }
+
+    .input-row span {
+      font-size: 14px;
+      color: #aaa;
+      width: 24px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: opacity 0.2s;
+    }
+
+    .btn:hover { opacity: 0.85; }
+    .btn-primary { background: #2c3e50; color: #fff; }
+    .btn-reset   { background: #95a5a6; color: #fff; margin-top: 8px; }
+
+    .error {
+      background: #fdecea;
+      color: #e74c3c;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      margin-top: 14px;
+    }
+
+    .result {
+      margin-top: 24px;
+      border-radius: 12px;
+      border: 2px solid;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .result .label { font-size: 12px; color: #aaa; margin-bottom: 4px; }
+    .result .bmi   { font-size: 42px; font-weight: bold; }
+    .result .divider { border: none; border-top: 1px solid #eee; margin: 14px 0; }
+    .result .cat   { font-size: 20px; font-weight: bold; }
+
+    .guide {
+      margin-top: 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .guide-item {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 13px;
+    }
+
+    .guide-item .dot { font-weight: bold; }
+    .guide-item .range { color: #aaa; font-size: 12px; margin-top: 2px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>BMI 계산기</h1>
+
+    <form method="POST">
+      <div class="input-group">
+        <label>키</label>
+        <div class="input-row">
+          <input type="number" name="height" placeholder="예: 170"
+                 value="{{ result.height if result else '' }}" step="0.1" required>
+          <span>cm</span>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>몸무게</label>
+        <div class="input-row">
+          <input type="number" name="weight" placeholder="예: 65"
+                 value="{{ result.weight if result else '' }}" step="0.1" required>
+          <span>kg</span>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">계산하기</button>
+      <button type="button" class="btn btn-reset" onclick="location.href='/'">초기화</button>
+    </form>
+
+    {% if error %}
+      <div class="error">{{ error }}</div>
+    {% endif %}
+
+    {% if result %}
+      <div class="result" style="border-color: {{ result.color }};">
+        <div class="label">BMI 수치</div>
+        <div class="bmi" style="color: {{ result.color }};">{{ result.bmi }}</div>
+        <hr class="divider">
+        <div class="label">판정</div>
+        <div class="cat" style="color: {{ result.color }};">{{ result.category }}</div>
+      </div>
+    {% endif %}
+
+    <div class="guide">
+      <div class="guide-item">
+        <div class="dot" style="color:#3498db;">● 저체중</div>
+        <div class="range">~ 18.4</div>
+      </div>
+      <div class="guide-item">
+        <div class="dot" style="color:#2ecc71;">● 정상</div>
+        <div class="range">18.5 ~ 22.9</div>
+      </div>
+      <div class="guide-item">
+        <div class="dot" style="color:#f39c12;">● 과체중</div>
+        <div class="range">23.0 ~ 24.9</div>
+      </div>
+      <div class="guide-item">
+        <div class="dot" style="color:#e74c3c;">● 비만</div>
+        <div class="range">25.0 ~</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
