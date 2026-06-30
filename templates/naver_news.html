@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>네이버 증권뉴스 크롤러</title>
+  <title>네이버 증권뉴스 감성 대시보드</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -14,169 +14,354 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 40px 16px;
+      padding: 40px 16px 60px;
     }
-    h1 {
-      font-size: 1.8rem;
-      font-weight: 700;
-      color: #03c75a;
-      margin-bottom: 8px;
-    }
-    .subtitle {
-      color: #718096;
-      margin-bottom: 32px;
-      font-size: 0.95rem;
-    }
+    h1 { font-size: 1.8rem; font-weight: 700; color: #03c75a; margin-bottom: 6px; }
+    .subtitle { color: #718096; margin-bottom: 28px; font-size: 0.95rem; }
+
     .card {
       background: #fff;
       border-radius: 16px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.08);
       width: 100%;
-      max-width: 860px;
-      padding: 32px;
+      max-width: 960px;
+      padding: 28px 32px;
+      margin-bottom: 20px;
     }
-    .btn-group {
+
+    /* API key input */
+    .api-row {
       display: flex;
-      gap: 12px;
-      margin-bottom: 24px;
+      gap: 10px;
+      margin-bottom: 20px;
       flex-wrap: wrap;
     }
+    .api-row input {
+      flex: 1;
+      min-width: 200px;
+      padding: 10px 14px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+    .api-row input:focus { border-color: #03c75a; }
+
+    .btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
     button {
-      padding: 12px 28px;
+      padding: 11px 24px;
       border: none;
       border-radius: 8px;
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 600;
       cursor: pointer;
       transition: opacity 0.2s;
     }
     button:hover { opacity: 0.85; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    #btn-crawl { background: #03c75a; color: #fff; }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    #btn-crawl    { background: #03c75a; color: #fff; }
+    #btn-analyze  { background: #7c3aed; color: #fff; }
     #btn-download { background: #1a73e8; color: #fff; }
-    #status {
-      font-size: 0.9rem;
-      color: #4a5568;
-      margin-bottom: 16px;
-      min-height: 20px;
-    }
+
+    #status { font-size: 0.9rem; color: #4a5568; min-height: 22px; margin-bottom: 16px; }
     .spinner {
-      display: inline-block;
-      width: 14px; height: 14px;
-      border: 2px solid #ccc;
-      border-top-color: #03c75a;
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      vertical-align: middle;
-      margin-right: 6px;
+      display: inline-block; width: 14px; height: 14px;
+      border: 2px solid #ccc; border-top-color: #03c75a;
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+      vertical-align: middle; margin-right: 6px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.88rem;
+
+    /* Dashboard summary cards */
+    .summary { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+    .summary-card {
+      flex: 1; min-width: 120px;
+      border-radius: 12px;
+      padding: 18px 20px;
+      text-align: center;
     }
+    .summary-card .count { font-size: 2rem; font-weight: 700; }
+    .summary-card .label { font-size: 0.85rem; margin-top: 4px; font-weight: 600; }
+    .pos { background: #f0fdf4; color: #16a34a; }
+    .neg { background: #fef2f2; color: #dc2626; }
+    .neu { background: #f8fafc; color: #64748b; }
+    .total { background: #eff6ff; color: #2563eb; }
+
+    /* Donut chart */
+    .chart-wrap {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    canvas#donut { width: 180px !important; height: 180px !important; }
+    .legend { display: flex; flex-direction: column; gap: 10px; }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
     thead th {
-      background: #f7fafc;
-      padding: 10px 12px;
-      text-align: left;
-      border-bottom: 2px solid #e2e8f0;
-      color: #4a5568;
-      font-weight: 600;
+      background: #f7fafc; padding: 10px 12px;
+      text-align: left; border-bottom: 2px solid #e2e8f0;
+      color: #4a5568; font-weight: 600;
     }
     tbody tr:nth-child(even) { background: #f7fafc; }
-    tbody td {
-      padding: 9px 12px;
-      border-bottom: 1px solid #e2e8f0;
-      vertical-align: middle;
-    }
-    tbody td:first-child {
-      width: 50px;
-      text-align: center;
-      color: #718096;
-      font-weight: 600;
-    }
-    tbody td a {
-      color: #2b6cb0;
-      text-decoration: none;
-    }
+    tbody td { padding: 9px 12px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+    tbody td a { color: #2b6cb0; text-decoration: none; }
     tbody td a:hover { text-decoration: underline; }
     .empty { text-align: center; color: #a0aec0; padding: 40px; }
-    .badge {
-      background: #ebf8f1;
-      color: #03c75a;
-      border-radius: 20px;
+
+    .tag {
+      display: inline-block;
       padding: 2px 10px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      margin-left: 8px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
     }
+    .tag-긍정 { background: #dcfce7; color: #16a34a; }
+    .tag-부정 { background: #fee2e2; color: #dc2626; }
+    .tag-중립 { background: #f1f5f9; color: #64748b; }
   </style>
 </head>
 <body>
-  <h1>📈 네이버 증권뉴스 크롤러</h1>
-  <p class="subtitle">1~9 페이지의 네이버 증권뉴스를 수집하고 엑셀로 다운로드합니다.</p>
+  <h1>📈 네이버 증권뉴스 감성 대시보드</h1>
+  <p class="subtitle">뉴스를 수집하고 AI로 긍정 / 부정 / 중립을 분석합니다.</p>
 
   <div class="card">
-    <div class="btn-group">
-      <button id="btn-crawl" onclick="startCrawl()">뉴스 수집하기</button>
-      <button id="btn-download" onclick="downloadExcel()">엑셀 다운로드</button>
+    <!-- API Key -->
+    <div class="api-row">
+      <input type="password" id="api-key" placeholder="OpenAI API Key (sk-...)" autocomplete="off" />
     </div>
+
+    <!-- Buttons -->
+    <div class="btn-group">
+      <button id="btn-crawl"    onclick="startCrawl()">① 뉴스 수집</button>
+      <button id="btn-analyze"  onclick="startAnalyze()" disabled>② 감성 분석</button>
+      <button id="btn-download" onclick="downloadExcel()" disabled>③ 엑셀 다운로드</button>
+    </div>
+
     <div id="status"></div>
-    <table id="news-table">
-      <thead>
-        <tr>
-          <th>Page</th>
-          <th>뉴스 제목</th>
-          <th>URL</th>
-        </tr>
-      </thead>
-      <tbody id="news-body">
-        <tr><td colspan="3" class="empty">수집하기 버튼을 눌러 뉴스를 가져오세요.</td></tr>
-      </tbody>
-    </table>
+
+    <!-- Summary -->
+    <div class="summary" id="summary" style="display:none!important">
+      <div class="summary-card total"><div class="count" id="cnt-total">0</div><div class="label">전체</div></div>
+      <div class="summary-card pos"><div class="count" id="cnt-pos">0</div><div class="label">긍정</div></div>
+      <div class="summary-card neg"><div class="count" id="cnt-neg">0</div><div class="label">부정</div></div>
+      <div class="summary-card neu"><div class="count" id="cnt-neu">0</div><div class="label">중립</div></div>
+    </div>
+
+    <!-- Donut chart -->
+    <div class="chart-wrap" id="chart-wrap" style="display:none!important">
+      <canvas id="donut"></canvas>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div><span id="leg-pos">긍정 0건 (0%)</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:#dc2626"></div><span id="leg-neg">부정 0건 (0%)</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:#94a3b8"></div><span id="leg-neu">중립 0건 (0%)</span></div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:50px">Page</th>
+            <th>뉴스 제목</th>
+            <th style="width:60px">링크</th>
+            <th style="width:70px">감성</th>
+            <th>판단 근거</th>
+          </tr>
+        </thead>
+        <tbody id="news-body">
+          <tr><td colspan="5" class="empty">① 뉴스 수집 버튼을 눌러 시작하세요.</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <script>
-    async function startCrawl() {
-      const btn = document.getElementById('btn-crawl');
-      const status = document.getElementById('status');
-      const tbody = document.getElementById('news-body');
+    let crawledNews = [];
+    let analyzedNews = [];
 
-      btn.disabled = true;
-      status.innerHTML = '<span class="spinner"></span>1~9페이지 수집 중... (약 10~20초 소요)';
-      tbody.innerHTML = '';
+    function setStatus(html) {
+      document.getElementById('status').innerHTML = html;
+    }
+
+    function escHtml(str) {
+      return String(str)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    /* ── 1. 뉴스 수집 ── */
+    async function startCrawl() {
+      document.getElementById('btn-crawl').disabled = true;
+      document.getElementById('btn-analyze').disabled = true;
+      document.getElementById('btn-download').disabled = true;
+      setStatus('<span class="spinner"></span>1~9페이지 수집 중...');
 
       try {
-        const res = await fetch('/crawl');
+        const res  = await fetch('/crawl');
         const data = await res.json();
+        crawledNews = data.news;
+        analyzedNews = [];
 
-        status.innerHTML = `✅ 수집 완료 — 총 <strong>${data.total}</strong>건 <span class="badge">${data.total} articles</span>`;
-
-        const rows = data.news.map(item => `
-          <tr>
-            <td>${item.page}</td>
-            <td>${escapeHtml(item['뉴스제목'])}</td>
-            <td><a href="${escapeHtml(item['뉴스URL'])}" target="_blank" rel="noopener">링크</a></td>
-          </tr>
-        `).join('');
-        tbody.innerHTML = rows || '<tr><td colspan="3" class="empty">데이터 없음</td></tr>';
-      } catch (e) {
-        status.textContent = '❌ 수집 중 오류가 발생했습니다.';
+        renderTable(crawledNews, false);
+        hideDashboard();
+        setStatus(`✅ 수집 완료 — 총 <strong>${data.total}</strong>건. ② 감성 분석 버튼을 눌러주세요.`);
+        document.getElementById('btn-analyze').disabled = false;
+      } catch(e) {
+        setStatus('❌ 수집 오류: ' + e.message);
       } finally {
-        btn.disabled = false;
+        document.getElementById('btn-crawl').disabled = false;
       }
     }
 
-    function downloadExcel() {
-      const status = document.getElementById('status');
-      status.innerHTML = '<span class="spinner"></span>엑셀 파일 생성 중...';
-      window.location.href = '/download';
-      setTimeout(() => { status.textContent = '✅ 다운로드 완료 — naver_finance_news.xlsx'; }, 3000);
+    /* ── 2. 감성 분석 ── */
+    async function startAnalyze() {
+      const apiKey = document.getElementById('api-key').value.trim();
+      if (!apiKey) { alert('OpenAI API Key를 입력해주세요.'); return; }
+      if (!crawledNews.length) { alert('먼저 뉴스를 수집해주세요.'); return; }
+
+      document.getElementById('btn-analyze').disabled  = true;
+      document.getElementById('btn-download').disabled = true;
+      setStatus(`<span class="spinner"></span>감성 분석 중... (${crawledNews.length}건, 약 1~2분 소요)`);
+
+      try {
+        const res  = await fetch('/analyze', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ api_key: apiKey, news: crawledNews })
+        });
+        const data = await res.json();
+        if (data.error) { setStatus('❌ ' + data.error); return; }
+
+        analyzedNews = data.news;
+        renderTable(analyzedNews, true);
+        renderDashboard(data.counts, data.news.length);
+        setStatus(`✅ 감성 분석 완료 — 긍정 ${data.counts['긍정']}건 / 부정 ${data.counts['부정']}건 / 중립 ${data.counts['중립']}건`);
+        document.getElementById('btn-download').disabled = false;
+      } catch(e) {
+        setStatus('❌ 분석 오류: ' + e.message);
+      } finally {
+        document.getElementById('btn-analyze').disabled = false;
+      }
     }
 
-    function escapeHtml(str) {
-      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    /* ── 3. 엑셀 다운로드 ── */
+    async function downloadExcel() {
+      setStatus('<span class="spinner"></span>엑셀 파일 생성 중...');
+      const res = await fetch('/download', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ news: analyzedNews })
+      });
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = 'naver_finance_news_sentiment.xlsx';
+      a.click(); URL.revokeObjectURL(url);
+      setStatus('✅ 다운로드 완료 — naver_finance_news_sentiment.xlsx');
+    }
+
+    /* ── 테이블 렌더링 ── */
+    function renderTable(news, withSentiment) {
+      const tbody = document.getElementById('news-body');
+      if (!news.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty">데이터 없음</td></tr>';
+        return;
+      }
+      tbody.innerHTML = news.map(item => `
+        <tr>
+          <td style="text-align:center;color:#718096;font-weight:600">${item.page}</td>
+          <td>${escHtml(item['뉴스제목'])}</td>
+          <td><a href="${escHtml(item['뉴스URL'])}" target="_blank" rel="noopener">링크</a></td>
+          <td>${withSentiment ? `<span class="tag tag-${item.sentiment}">${item.sentiment}</span>` : '-'}</td>
+          <td style="color:#718096;font-size:0.82rem">${withSentiment ? escHtml(item.reason||'') : ''}</td>
+        </tr>
+      `).join('');
+    }
+
+    /* ── 대시보드 렌더링 ── */
+    function renderDashboard(counts, total) {
+      document.getElementById('cnt-total').textContent = total;
+      document.getElementById('cnt-pos').textContent   = counts['긍정'];
+      document.getElementById('cnt-neg').textContent   = counts['부정'];
+      document.getElementById('cnt-neu').textContent   = counts['중립'];
+
+      const pct = v => total ? Math.round(v/total*100) : 0;
+      document.getElementById('leg-pos').textContent = `긍정 ${counts['긍정']}건 (${pct(counts['긍정'])}%)`;
+      document.getElementById('leg-neg').textContent = `부정 ${counts['부정']}건 (${pct(counts['부정'])}%)`;
+      document.getElementById('leg-neu').textContent = `중립 ${counts['중립']}건 (${pct(counts['중립'])}%)`;
+
+      document.getElementById('summary').style.cssText    = 'display:flex!important';
+      document.getElementById('chart-wrap').style.cssText = 'display:flex!important';
+
+      drawDonut(counts, total);
+    }
+
+    function hideDashboard() {
+      document.getElementById('summary').style.cssText    = 'display:none!important';
+      document.getElementById('chart-wrap').style.cssText = 'display:none!important';
+    }
+
+    /* ── 도넛 차트 (Canvas) ── */
+    function drawDonut(counts, total) {
+      const canvas = document.getElementById('donut');
+      const ctx    = canvas.getContext('2d');
+      const dpr    = window.devicePixelRatio || 1;
+      const size   = 180;
+      canvas.width  = size * dpr;
+      canvas.height = size * dpr;
+      canvas.style.width  = size + 'px';
+      canvas.style.height = size + 'px';
+      ctx.scale(dpr, dpr);
+
+      const cx = size / 2, cy = size / 2, r = 72, hole = 44;
+      const slices = [
+        { value: counts['긍정'], color: '#16a34a' },
+        { value: counts['부정'], color: '#dc2626' },
+        { value: counts['중립'], color: '#94a3b8' },
+      ];
+
+      ctx.clearRect(0, 0, size, size);
+
+      if (total === 0) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.arc(cx, cy, hole, 0, Math.PI * 2, true);
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fill();
+        return;
+      }
+
+      let start = -Math.PI / 2;
+      for (const s of slices) {
+        const angle = (s.value / total) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, start, start + angle);
+        ctx.closePath();
+        ctx.fillStyle = s.color;
+        ctx.fill();
+        start += angle;
+      }
+
+      // hole
+      ctx.beginPath();
+      ctx.arc(cx, cy, hole, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+
+      // center text
+      ctx.fillStyle = '#1a202c';
+      ctx.font = `bold ${Math.floor(size*0.13)}px Segoe UI`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(total + '건', cx, cy);
     }
   </script>
 </body>
